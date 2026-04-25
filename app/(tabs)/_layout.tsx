@@ -81,29 +81,6 @@ const styles = StyleSheet.create({
     color: "#0078a8",
     fontWeight: "600",
   },
-  badgeContainer: {
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  badgeNewText: {
-    fontSize: 9,
-    color: "#ff2b2b",
-    fontWeight: "800",
-    lineHeight: 10,
-  },
-  badgeNumber: {
-    backgroundColor: "#f0f6ff",
-    borderColor: "#82b7ff",
-    borderWidth: 1,
-    borderRadius: 8,
-    paddingHorizontal: 4,
-    paddingVertical: 0,
-  },
-  badgeNumberText: {
-    fontSize: 9,
-    color: "#1a64cc",
-    fontWeight: "800",
-  },
 });
 
 function UnifiedTabBar({ state, navigation }: any) {
@@ -125,16 +102,6 @@ function UnifiedTabBar({ state, navigation }: any) {
         <Text style={[styles.navLabel, isHomeFocused && styles.navLabelActive]}>
           Home
         </Text>
-      </TouchableOpacity>
-
-      <TouchableOpacity style={styles.navItem} activeOpacity={0.8}>
-        <View style={styles.badgeContainer}>
-          <Text style={styles.badgeNewText}>NEW</Text>
-          <View style={styles.badgeNumber}>
-            <Text style={styles.badgeNumberText}>6 in 1</Text>
-          </View>
-        </View>
-        <Text style={styles.navLabel}>Big Big Pizza</Text>
       </TouchableOpacity>
 
       <TouchableOpacity

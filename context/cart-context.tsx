@@ -9,14 +9,20 @@ export type CartProduct = {
   variant: string;
 };
 
+export type ServiceMode = "Delivery" | "Takeaway" | "Dine-in";
+
 type CartLine = CartProduct & { quantity: number };
 
 type CartContextValue = {
   items: CartLine[];
   totalItems: number;
+  serviceMode: ServiceMode;
+  selectedLocation: string;
   addItem: (item: CartProduct) => void;
   incrementItem: (id: number) => void;
   decrementItem: (id: number) => void;
+  setServiceMode: (mode: ServiceMode) => void;
+  setSelectedLocation: (location: string) => void;
 };
 
 const CartContext = createContext<CartContextValue | undefined>(undefined);
@@ -25,6 +31,10 @@ const getNumericPrice = (price: string) => Number(price.replace(/[^\d]/g, "")) |
 
 export function CartProvider({ children }: { children: ReactNode }) {
   const [items, setItems] = useState<CartLine[]>([]);
+  const [serviceMode, setServiceMode] = useState<ServiceMode>("Takeaway");
+  const [selectedLocation, setSelectedLocation] = useState(
+    "ASHOKA UNIVERSITY SONIPAT HARYANA"
+  );
 
   const addItem = (item: CartProduct) => {
     setItems((prev) => {
@@ -58,8 +68,18 @@ export function CartProvider({ children }: { children: ReactNode }) {
   );
 
   const value = useMemo(
-    () => ({ items, totalItems, addItem, incrementItem, decrementItem }),
-    [items, totalItems]
+    () => ({
+      items,
+      totalItems,
+      serviceMode,
+      selectedLocation,
+      addItem,
+      incrementItem,
+      decrementItem,
+      setServiceMode,
+      setSelectedLocation,
+    }),
+    [items, totalItems, serviceMode, selectedLocation]
   );
 
   return <CartContext.Provider value={value}>{children}</CartContext.Provider>;

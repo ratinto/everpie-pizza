@@ -1,12 +1,13 @@
 import { Ionicons } from "@expo/vector-icons";
 import { Image } from "expo-image";
-import { useRouter } from "expo-router";
-import { useMemo, useState } from "react";
+import { useLocalSearchParams, useRouter } from "expo-router";
+import { useEffect, useMemo, useState } from "react";
 import {
   ScrollView,
   StatusBar,
   StyleSheet,
   Text,
+  TextInput,
   TouchableOpacity,
   View,
 } from "react-native";
@@ -121,21 +122,45 @@ const getNumericPrice = (price: string) => Number(price.replace(/[^\d]/g, "")) |
 
 export default function MenuScreen() {
   const router = useRouter();
+  const params = useLocalSearchParams<{ category?: string }>();
   const { addItem, totalItems, items, incrementItem, decrementItem } = useCart();
   const [activeTab, setActiveTab] = useState("Cheese Lava");
   const [isFullMenuOpen, setIsFullMenuOpen] = useState(false);
   const [isSortSheetOpen, setIsSortSheetOpen] = useState(false);
+  const [isSearchOpen, setIsSearchOpen] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
   const [showVegOnly, setShowVegOnly] = useState(false);
   const [showNonVegOnly, setShowNonVegOnly] = useState(false);
   const [sortMode, setSortMode] = useState<SortMode>("POPULAR");
 
+  useEffect(() => {
+    if (
+      params.category &&
+      params.category in MENU_ITEMS_BY_TAB &&
+      params.category !== activeTab
+    ) {
+      setActiveTab(params.category as keyof typeof MENU_ITEMS_BY_TAB);
+    }
+  }, [activeTab, params.category]);
+
   const visibleItems = useMemo(
     () => {
-      const baseItems = MENU_ITEMS_BY_TAB[activeTab as keyof typeof MENU_ITEMS_BY_TAB] ?? [];
+      const normalizedQuery = searchQuery.trim().toLowerCase();
+      const baseItems = normalizedQuery
+        ? Object.values(MENU_ITEMS_BY_TAB).flat()
+        : MENU_ITEMS_BY_TAB[activeTab as keyof typeof MENU_ITEMS_BY_TAB] ?? [];
 
       const filteredItems = baseItems.filter((item) => {
         if (showVegOnly && item.type !== "veg") return false;
         if (showNonVegOnly && item.type !== "non-veg") return false;
+        if (
+          normalizedQuery &&
+          ![item.title, item.description, item.variant].some((value) =>
+            value.toLowerCase().includes(normalizedQuery)
+          )
+        ) {
+          return false;
+        }
         return true;
       });
 
@@ -153,7 +178,7 @@ export default function MenuScreen() {
 
       return filteredItems;
     },
-    [activeTab, showVegOnly, showNonVegOnly, sortMode]
+    [activeTab, searchQuery, showVegOnly, showNonVegOnly, sortMode]
   );
 
   return (
@@ -167,7 +192,17 @@ export default function MenuScreen() {
           </TouchableOpacity>
           <Text style={styles.storeTitle}>Everpie Pizza</Text>
           <View style={styles.headerActions}>
-            <TouchableOpacity style={styles.searchButton}>
+            <TouchableOpacity
+              style={[styles.searchButton, isSearchOpen && styles.searchButtonActive]}
+              onPress={() => {
+                if (isSearchOpen) {
+                  setSearchQuery("");
+                  setIsSearchOpen(false);
+                  return;
+                }
+                setIsSearchOpen(true);
+              }}
+            >
               <Ionicons name="search" size={20} color="#333" />
             </TouchableOpacity>
             <TouchableOpacity
@@ -183,6 +218,28 @@ export default function MenuScreen() {
             </TouchableOpacity>
           </View>
         </View>
+
+        {isSearchOpen && (
+          <View style={styles.searchRow}>
+            <View style={styles.searchField}>
+              <Ionicons name="search" size={18} color="#7a7a7a" />
+              <TextInput
+                value={searchQuery}
+                onChangeText={setSearchQuery}
+                placeholder="Search pizzas, crusts or toppings"
+                placeholderTextColor="#9b9b9b"
+                style={styles.searchInput}
+                autoFocus
+                returnKeyType="search"
+              />
+              {!!searchQuery && (
+                <TouchableOpacity onPress={() => setSearchQuery("")}>
+                  <Ionicons name="close-circle" size={18} color="#9a9a9a" />
+                </TouchableOpacity>
+              )}
+            </View>
+          </View>
+        )}
 
         <View style={styles.filterRow}>
           <TouchableOpacity
@@ -258,7 +315,9 @@ export default function MenuScreen() {
 
       <View style={styles.sectionHeader}>
         <View style={styles.sectionLine} />
-        <Text style={styles.sectionTitle}>{activeTab}</Text>
+        <Text style={styles.sectionTitle}>
+          {searchQuery.trim() ? "Search Results" : activeTab}
+        </Text>
         <View style={styles.sectionLine} />
       </View>
 
@@ -266,7 +325,11 @@ export default function MenuScreen() {
         <View style={styles.menuListContent}>
           {visibleItems.length === 0 ? (
             <View style={styles.emptyState}>
-              <Text style={styles.emptyStateText}>No items for selected filters.</Text>
+              <Text style={styles.emptyStateText}>
+                {searchQuery.trim()
+                  ? "No menu items matched your search."
+                  : "No items for selected filters."}
+              </Text>
             </View>
           ) : (
             visibleItems.map((item) => (
@@ -448,6 +511,31 @@ const styles = StyleSheet.create({
     alignItems: "center",
     gap: 8,
   },
+  searchRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 10,
+    paddingHorizontal: 14,
+    paddingBottom: 12,
+  },
+  searchField: {
+    flex: 1,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+    minHeight: 46,
+    borderWidth: 1,
+    borderColor: "#d1d1d1",
+    borderRadius: 14,
+    backgroundColor: "#fff",
+    paddingHorizontal: 14,
+  },
+  searchInput: {
+    flex: 1,
+    fontSize: 15,
+    color: "#232323",
+    paddingVertical: 0,
+  },
   searchButton: {
     width: 44,
     height: 44,
@@ -457,6 +545,10 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
     backgroundColor: "#fff",
+  },
+  searchButtonActive: {
+    borderColor: "#0078a8",
+    backgroundColor: "#f1f9fc",
   },
   cartBadge: {
     position: "absolute",
